@@ -9,8 +9,9 @@
 //
 * [@TO_READ:
 *    <
-*    ****WARNING***** This version does not take care of deep copying of class data.
-*	 And adding a class will SecuredPtr does not mean it will call the contructor and when securedptr is destroyed , it will not call the destructor.
+*    ****WARNING***** 
+*	 This version does not take care of deep copying of class data.
+*    Constructors and destructors are not called contructor and when securedptr is created/destroyed.
 *    So any object inheritance is not properly maintained inside SecuredPtr.
 *    Class objects can be recreated with the data recovered from SecuredPtr by calling construtors/destructors
 *
