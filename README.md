@@ -18,15 +18,16 @@ Windows C++ Secured Pointer Template Class to autpmatically encrypt/decrypt the 
   if(teststring == "HELLOHOW") //True </BR>
 
   class struexmp {public :int a;string c;double d;}; // create a structure  </BR>
-  SecuredPtr< struexmp1 > structexample2; // create structure variable  </BR>
+  
   struexmp var{ 15,"hello",14.01 };  </BR>
+  SecuredPtr< struexmp > structexample2; // create structure variable  </BR>
   structexample2 = var; //Inside structexample2 value is encrypted however member accesses/changes are allowed  </BR>
   if(structexample2->c=="hello") // True  </BR>
 
 ***Dereferencing of value with unencrypted data using '*'(like pointers) from SecuredPtr***
   SecuredPtr< std::wstring > hh;  </BR>
   hh= L"hello";  </BR>
-  std::wstring h1 = *hh; //h1 value is normal string however hh keeps the encrypted value till its scope  </BR>
+  std::wstring h1 = *hh; //h1 value is string with unencypted copy of data however hh keeps the copy of encrypted value till its scope  </BR>
   
 ****Very Important****
   Please note as accessing member properties with '->' is costly as it decrypts and encrypts data on each access.
