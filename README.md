@@ -1,19 +1,20 @@
 # SecurePtr
-Windows C++ Secured Pointer Template Class to encrypt/decrypt the DATA of std::string,std::wstring,CString or user defined classes/structs in memory
+Windows C++ Secured Pointer Template Class to autpmatically encrypt/decrypt the DATA of std::string,std::wstring,CString or user defined classes/structs etc. in memory
 
- ****WARNING***** This version does not take care of deep copying of class data.
-*	 And adding a class will SecuredPtr does not mean it will call the contructor and when securedptr is destroyed , it will not call the destructor.
-*    So any object inheritance is not properly maintained inside SecuredPtr.
+ ****WARNING***** 
+*    This version does not take care of deep copying of class data.
+*	   Constructors and destructors are not called contructor and when securedptr is created/destroyed.
+*    Any object inheritance is not properly maintained inside SecuredPtr.
 *    Class objects can be recreated with the data recovered from SecuredPtr by calling construtors/destructors
 *
-*    Examples:
+****Examples:****
 *    SecuredPtr<T> varaibles will keep the data of Type T in memory encrypted till its scope.
 *    Like other smart pointers outside of the scope the SecuredPtr will destroy its internal data.
 *
-*    ***Accessing of member functions of member properties are allowed which is atomatically decrypt and encypt data in back-end****
-*    SecuredPtr<CString> teststring  = CString("Hellohow");//Inside teststring the value is encrypted however all member accesses will work
+*    ***Accessing of member functions of member properties are allowed which is atomatically decrypt and encypt data in back-end_****
+_*    SecuredPtr<CString> teststring  = CString("Hellohow");//Inside teststring the value is encrypted however all member accesses will work
 *    teststring->MakeUpper(); // Call CString method
-*    if(teststring == "HELLOHOW") //True
+*    if(teststring == "HELLOHOW") //True_
 *
 *    class struexmp {public :int a;string c;double d;}; // create a structure
 *
@@ -27,14 +28,14 @@ Windows C++ Secured Pointer Template Class to encrypt/decrypt the DATA of std::s
 *    hh= L"hello";
 *    std::wstring h1 = *hh; //h1 value is normal string however hh keeps the encrypted value till its scope
 *    
-*    ****VI****
+*    _****VI****_
 *    Please note as accessing member properties with '->' is costly as it decrypts and encrypts data on each access.
 *    It is ok when there are not too many accesses. When too many accesses it is recommended to use '&' to improve perfomance.
 *    However data inside SecuredPtr stays uncrypted till all the variables created by '&' goes out of scope.
 *    If these vaiables are shared again and all is out of scope the SecuredPtr variable will re-encrypt the data automatically.
 *
 *    ***Get the pointer of unencrypted data using '&'(like pointers)***
-*    SecuredPtr<struexmp> structexample2; //class struexmp {public :int a;string c;double d;};
+_*    SecuredPtr<struexmp> structexample2; //class struexmp {public :int a;string c;double d;};
 *    struexmp var{ 15,"hello",14.01 };
 *    structexample2 = var;
 *    {                     //Create a scope
@@ -42,7 +43,7 @@ Windows C++ Secured Pointer Template Class to encrypt/decrypt the DATA of std::s
 *       uncr->a = 17;      //Change the first member using the pointer variable
 *    }                     //Going out of scope for uncr so uncr is destroyed now
 *        //here structexample2 is encypted again
-*    if(structexample2->a == 17) //True
+*    if(structexample2->a == 17) //True_
 *
 *    Additionaly comparison operators, copy constructor work normally like other variables
 *    ****Debug Value Display**** 
