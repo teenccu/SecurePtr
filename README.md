@@ -10,7 +10,7 @@ Windows C++ Secured Pointer Template Class to encrypt/decrypt the DATA of std::s
 *    SecuredPtr<T> varaibles will keep the data of Type T in memory encrypted till its scope.
 *    Like other smart pointers outside of the scope the SecuredPtr will destroy its internal data.
 *
-*    //Accessing of member functions of member properties are allowed which is atomatically decrypt and encypt data in back-end
+*    ***Accessing of member functions of member properties are allowed which is atomatically decrypt and encypt data in back-end****
 *    SecuredPtr<CString> teststring  = CString("Hellohow");//Inside teststring the value is encrypted however all member accesses will work
 *    teststring->MakeUpper(); // Call CString method
 *    if(teststring == "HELLOHOW") //True
@@ -22,18 +22,18 @@ Windows C++ Secured Pointer Template Class to encrypt/decrypt the DATA of std::s
 *    structexample2 = var; //Inside structexample2 value is encrypted however member accesses/changes are allowed
 *    if(structexample2->c=="hello") // True
 *
-*    //Dereferencing of value with unencrypted data using '*'(like pointers) from SecuredPtr
+*    ***Dereferencing of value with unencrypted data using '*'(like pointers) from SecuredPtr***
 *    SecuredPtr<std::wstring> hh;
 *    hh= L"hello";
 *    std::wstring h1 = *hh; //h1 value is normal string however hh keeps the encrypted value till its scope
 *    
 *    ****VI****
-*    //Please note as accessing member properties with '->' is costly as it decrypts and encrypts data on each access.
-*    //It is ok when there are not too many accesses. When too many accesses it is recommended to use '&' to improve perfomance.
-*    //However data inside SecuredPtr stays uncrypted till all the variables created by '&' goes out of scope.
-*    //If these vaiables are shared again and all is out of scope the SecuredPtr variable will re-encrypt the data automatically.
+*    Please note as accessing member properties with '->' is costly as it decrypts and encrypts data on each access.
+*    It is ok when there are not too many accesses. When too many accesses it is recommended to use '&' to improve perfomance.
+*    However data inside SecuredPtr stays uncrypted till all the variables created by '&' goes out of scope.
+*    If these vaiables are shared again and all is out of scope the SecuredPtr variable will re-encrypt the data automatically.
 *
-*    //Get the pointer of unencrypted data using '&'(like pointers)
+*    ***Get the pointer of unencrypted data using '&'(like pointers)***
 *    SecuredPtr<struexmp> structexample2; //class struexmp {public :int a;string c;double d;};
 *    struexmp var{ 15,"hello",14.01 };
 *    structexample2 = var;
