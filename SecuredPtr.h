@@ -1,62 +1,5 @@
 #pragma once
-/*
-/////////////////////////////////////////////////////////////////////////////
-//
-* @FILE: SecuredPtr.h : Secured Pointer Template Class
-//
-* @DESCRIPTION:
-*   < Use this class to encrypt/decrypt the DATA of std::string,std::wstring,CString or user defined classes/structs in memory>
-//
-* [@TO_READ:
-*    <
-*    ****WARNING***** 
-*	 This version does not take care of deep copying of class data.
-*    Constructors and destructors are not called contructor and when securedptr is created/destroyed.
-*    So any object inheritance is not properly maintained inside SecuredPtr.
-*    Class objects can be recreated with the data recovered from SecuredPtr by calling construtors/destructors
-*
-*    Examples:
-*    SecuredPtr<T> varaibles will keep the data of Type T in memory encrypted till its scope.
-*    Like other smart pointers outside of the scope the SecuredPtr will destroy its internal data.
-*
-*    //Accessing of member functions of member properties are allowed which is atomatically decrypt and encypt data in back-end
-*    SecuredPtr<CString> teststring  = CString("Hellohow");//Inside teststring the value is encrypted however all member accesses will work
-*    teststring->MakeUpper(); // Call CString method
-*    if(teststring == "HELLOHOW") //True
-*
-*    class struexmp {public :int a;string c;double d;}; // create a structure
-*
-*    SecuredPtr<struexmp> structexample2; // create structure variable
-*    struexmp var{ 15,"hello",14.01 };
-*    structexample2 = var; //Inside structexample2 value is encrypted however member accesses/changes are allowed
-*    if(structexample2->c=="hello") // True
-*
-*    //Dereferencing of value with unencrypted data using '*'(like pointers) from SecuredPtr
-*    SecuredPtr<std::wstring> hh;
-*    hh= L"hello";
-*    std::wstring h1 = *hh; //h1 value is normal string however hh keeps the encrypted value till its scope
-*    
-*    ****VI****
-*    //Please note as accessing member properties with '->' is costly as it decrypts and encrypts data on each access.
-*    //It is ok when there are not too many accesses. When too many accesses it is recommended to use '&' to improve perfomance.
-*    //However data inside SecuredPtr stays uncrypted till all the variables created by '&' goes out of scope.
-*    //If these vaiables are shared again and all is out of scope the SecuredPtr variable will re-encrypt the data automatically.
-*
-*    //Get the pointer of unencrypted data using '&'(like pointers)
-*    SecuredPtr<struexmp> structexample2; //class struexmp {public :int a;string c;double d;};
-*    struexmp var{ 15,"hello",14.01 };
-*    structexample2 = var;
-*    {                     //Create a scope
-*       auto uncr = &var;  // structexample2 now have its internal data unecrypted
-*       uncr->a = 17;      //Change the first member using the pointer variable
-*    }                     //Going out of scope for uncr so uncr is destroyed now
-*        //here structexample2 is encypted again
-*    if(structexample2->a == 17) //True
-*
-*    Additionaly comparison operators, copy constructor work normally like other variables
-*    ****Debug Value Display**** 
-*    #define _ShowDebugVal to show decrypted data in SecuredPtr for debugging purpose>]
-//
+
 * @VERS
 //*******************************************************************-
 //			|         |            |
@@ -129,7 +72,8 @@ namespace Secured_Ptr
                 if (dataSize == 0)
                     return; // we do not anything if size cannot be calculated
                 serialize<T>(*obj, &orgdata);
-                isFreeRequired = true;
+				if (orgdata != nullptr)	// KW fix - @AE 04/10/2022
+					isFreeRequired = true;
             }
             else
                 orgdata = (PBYTE)obj; // if size is already provided then we do not do any calcuated size and treat as BYTE byffer
@@ -141,7 +85,8 @@ namespace Secured_Ptr
                 dataBlockSize = dataSize;
 
             protectedData = (PBYTE)malloc(dataBlockSize);
-            memcpy(protectedData, orgdata, dataSize);
+			if (protectedData != nullptr && orgdata != nullptr)	// KW fix - @AE 04/10/2022
+				memcpy(protectedData, orgdata, dataSize);
             if (isFreeRequired)
             {
                 SecureZeroMemory(orgdata, _msize(orgdata));
@@ -157,7 +102,8 @@ namespace Secured_Ptr
             if (size > 0)
             {
                 *out = (PBYTE)malloc(size * sizeof(wchar_t));
-                memcpy(*out, str.GetString(), size * sizeof(wchar_t));
+				if (*out != nullptr)										// KW fix - @AE 04/10/2022
+					memcpy(*out, str.GetString(), size * sizeof(wchar_t));
             }
             return nullptr;
         }
@@ -262,7 +208,8 @@ namespace Secured_Ptr
                     }
                     delete x; //call the destructor in case of string type objects
                 });
-            Deserialize<T>(temp.get());
+			if (temp != nullptr)	// KW fix - @AE 04/10/2022
+				Deserialize<T>(temp.get());
             nptr = temp;   //TODO protected pointer could have been freed but count not as == operator will not work
             return nullptr;
         }
@@ -367,7 +314,7 @@ namespace Secured_Ptr
 
         explicit SecuredPtr(const PBYTE obj, size_t size, bool IsSecured) // Does not clear the PBYTE but operator() clears the PBYTE 
             noexcept
-            : protectedData(nullptr), dataSize(0)
+            : protectedData(nullptr), dataSize(0), overwriteOnExit(true)
         {
             if (obj == nullptr)
                 return;
@@ -384,8 +331,11 @@ namespace Secured_Ptr
                     dataBlockSize = size;
                 //protectedptr must be null here as called from constructor
                 protectedData = (PBYTE)malloc(dataBlockSize);
-                memcpy(protectedData, obj, dataBlockSize);
-                isEncrypted = true;
+				if (protectedData != nullptr)		// KW fix - @AE 04/10/2022
+				{
+					memcpy(protectedData, obj, dataBlockSize);
+					isEncrypted = true;
+				}
 #ifdef _ShowDebugVal
                 ProtectMemory(false);
                 GetSharedPtrDebug<T>();
@@ -466,7 +416,8 @@ namespace Secured_Ptr
                 //Give the whole buffer
                 auto len = _msize(protectedData);
                 data = (PBYTE)malloc(len);
-                memcpy(data, protectedData, len);
+				if (data != nullptr)	// KW fix - @AE 04/10/2022
+					memcpy(data, protectedData, len);
             }
             return data;
         }
@@ -556,7 +507,8 @@ namespace Secured_Ptr
                 else
                     dataBlockSize = other.dataSize;
                 this->protectedData = (PBYTE)malloc(dataBlockSize);
-                memcpy_s(this->protectedData, dataBlockSize, other.protectedData, dataBlockSize);
+				if (this->protectedData != nullptr)	// KW fix - @AE 04/10/2022
+					memcpy_s(this->protectedData, dataBlockSize, other.protectedData, dataBlockSize);
             }
 
             this->dataSize = other.dataSize;
@@ -634,11 +586,13 @@ namespace Secured_Ptr
             return *this;
         }
 
+        //constant time comparison 
         bool operator!=(const T& other)
         {
             return !(this->operator==(other));
         }
 
+        //constant time comparison 
         bool operator==(const T& other)
         {
             ProtectMemory(false);
@@ -666,12 +620,16 @@ namespace Secured_Ptr
             for (int i = 0; i < dataSize; i++)
             {
                 result |= thisData[i] ^ otherData[i];
+                if (result == 1)
+                    break;
             }
             ProtectMemory(true);
             free((void*)otherData);
             return result == 0;
         }
 
+
+        //constant time comparison 
         bool operator==(SecuredPtr& other)
         {
             if (dataSize != other.dataSize)
