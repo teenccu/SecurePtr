@@ -1,14 +1,12 @@
 #pragma once
 
-* @VERS
 //*******************************************************************-
-//			|         |            |
-// 	Version |  Date   | Author	   | comment about the modification
+//		|         |            	|
+// 	Version |  Date   | Author	| comment about the modification
 //*******************************************************************-
-*   1.0     |03/07/22 | C.GHOSH   | Creation
+*   	1.0     |03/07/22 | C.GHOSH  	 | Creation
 //*******************************************************************-
 /////////////////////////////////////////////////////////////////////////////
-*/
 
 #include "Windows.h"
 #include "Wincrypt.h"
