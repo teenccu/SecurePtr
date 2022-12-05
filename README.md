@@ -1,5 +1,6 @@
 # SecurePtr
 Windows C++ Secured Pointer Template Class to autpmatically encrypt/decrypt the DATA of std::string,std::wstring,CString or user defined classes/structs etc. in memory
+by using inbuilt Windows DPAPI. However, it is possible to use the same concept  for other systems like Linux by changing the crypto implementation
 
  ***WARNING*** </BR>
      This version does not take care of deep copying of class data. </BR>
