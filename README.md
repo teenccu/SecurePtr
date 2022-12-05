@@ -41,8 +41,8 @@ by using inbuilt Windows DPAPI. However, it is possible to use the same concept 
   struexmp var{ 15,"hello",14.01 };  </BR>
   structexample2 = var;  </BR>
   {                      //Create a scope  </BR>
-     auto uncr = &var;  // structexample2 now have its internal data unecrypted  </BR>
-     uncr->a = 17;      //Change the first member using the pointer variable  </BR>
+     auto uncr = &structexample2;  // structexample2 now have its internal data unecrypted and uncr as well </BR>
+     uncr->a = 17;      //Change the first member  </BR>
   }                     //Going out of scope for uncr so uncr is destroyed now  </BR>
   //here structexample2 is encypted again  </BR>
   if(structexample2->a == 17) //True  </BR>
