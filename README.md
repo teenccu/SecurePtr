@@ -25,7 +25,7 @@ by using inbuilt Windows DPAPI. However, it is possible to use the same concept 
   structexample2 = var; //Inside structexample2 value is encrypted however member accesses/changes are allowed  </BR>
   if(structexample2->c=="hello") // True  </BR>
 
-***Dereferencing of value with unencrypted data using '*'(like pointers) from SecuredPtr***
+***Dereferencing of value with unencrypted data using pointer operator from SecuredPtr***</BR>
   SecuredPtr< std::wstring > hh;  </BR>
   hh= L"hello";  </BR>
   std::wstring h1 = *hh; //h1 value is string with unencypted copy of data however hh keeps the copy of encrypted value till its scope  </BR>
