@@ -43,8 +43,9 @@ namespace Secured_Ptr
 #ifdef _ShowDebugVal
         shared_ptr<T> debugval; //For debugging purpose seeing the real value and must be disabled for versions requiring encryption in memory
 #endif
-        void internalassign(const T *obj)
+        void internalassign(const T* obj)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             if (obj == nullptr)
             {
                 return;
@@ -70,8 +71,8 @@ namespace Secured_Ptr
                 if (dataSize == 0)
                     return; // we do not anything if size cannot be calculated
                 serialize<T>(*obj, &orgdata);
-				if (orgdata != nullptr)	// KW fix - @AE 04/10/2022
-					isFreeRequired = true;
+                if (orgdata != nullptr)	// KW fix - @AE 04/10/2022
+                    isFreeRequired = true;
             }
             else
                 orgdata = (PBYTE)obj; // if size is already provided then we do not do any calcuated size and treat as BYTE byffer
@@ -83,8 +84,8 @@ namespace Secured_Ptr
                 dataBlockSize = dataSize;
 
             protectedData = (PBYTE)malloc(dataBlockSize);
-			if (protectedData != nullptr && orgdata != nullptr)	// KW fix - @AE 04/10/2022
-				memcpy(protectedData, orgdata, dataSize);
+            if (protectedData != nullptr && orgdata != nullptr)	// KW fix - @AE 04/10/2022
+                memcpy(protectedData, orgdata, dataSize);
             if (isFreeRequired)
             {
                 SecureZeroMemory(orgdata, _msize(orgdata));
@@ -100,14 +101,14 @@ namespace Secured_Ptr
             if (size > 0)
             {
                 *out = (PBYTE)malloc(size * sizeof(wchar_t));
-				if (*out != nullptr)										// KW fix - @AE 04/10/2022
-					memcpy(*out, str.GetString(), size * sizeof(wchar_t));
+                if (*out != nullptr)										// KW fix - @AE 04/10/2022
+                    memcpy(*out, str.GetString(), size * sizeof(wchar_t));
             }
             return nullptr;
         }
 
         template<typename T>
-        typename std::enable_if<std::is_same<T, std::wstring>::value, void>::type*  serialize(const T& str, PBYTE* out)
+        typename std::enable_if<std::is_same<T, std::wstring>::value, void>::type* serialize(const T& str, PBYTE* out)
         {
             const std::size_t size = str.length();
             if (size > 0)
@@ -195,19 +196,27 @@ namespace Secured_Ptr
         {
             shared_ptr<T> temp(
                 (T*)malloc(sizeof(T)), // Allocate CString,wstring etc
-                [this](T *x) {
+                [this](T* x) {
                     if (this->protectedData != nullptr)
                     {
                         std::lock_guard<std::recursive_mutex> lg(m);
+                        //if protectedData is already pointing to something,
+                        //securely overwrite and delete it
+                        if (protectedData)
+                        {
+                            SecureWipeData();
+                            free(protectedData);
+                            protectedData = nullptr;
+                        }
                         dataSize = 0;
                         internalassign(x);// Though string are immutable but classes like CString can change their internal value so copy back that data
                         holder.reset();
                         ProtectMemory(true);
                     }
-                    delete x; //call the destructor in case of string type objects
+            delete x; //call the destructor in case of string type objects
                 });
-			if (temp != nullptr)	// KW fix - @AE 04/10/2022
-				Deserialize<T>(temp.get());
+            if (temp != nullptr)	// KW fix - @AE 04/10/2022
+                Deserialize<T>(temp.get());
             nptr = temp;   //TODO protected pointer could have been freed but count not as == operator will not work
             return nullptr;
         }
@@ -217,7 +226,7 @@ namespace Secured_Ptr
         {
             shared_ptr<T> temp(
                 reinterpret_cast<T*>(protectedData),
-                [this](T *x) {
+                [this](T* x) {
                     if (this->protectedData != nullptr)
                     {
                         std::lock_guard<std::recursive_mutex> lg(m);
@@ -239,7 +248,7 @@ namespace Secured_Ptr
             {
                 shared_ptr<T> temp(
                     (T*)malloc(sizeof(T)), // Allocate CString,wstring etc
-                    [this](T *x) {
+                    [this](T* x) {
                         if (x != nullptr)
                         {
                             delete x; // call the destructor in case of string type objects
@@ -264,7 +273,7 @@ namespace Secured_Ptr
                 memcpy_s(tempdata, dataSize, protectedData, dataSize);
                 shared_ptr<T> temp(
                     reinterpret_cast<T*>(tempdata),
-                    [this](T *x) {
+                    [this](T* x) {
                         if (x != nullptr)
                         {
                             free(x);// Only free the memory dont call destructor as it is is not supported 
@@ -285,7 +294,7 @@ namespace Secured_Ptr
             : protectedData(nullptr), overwriteOnExit(wipeOnExit), dataSize(0) {
             holder.reset()/*, holder2.reset()*/;
         }
-        explicit SecuredPtr(T *obj, bool wipeOnExit = true) noexcept
+        explicit SecuredPtr(T* obj, bool wipeOnExit = true) noexcept
             : protectedData(nullptr), overwriteOnExit(wipeOnExit), dataSize(0)
         {
             if (obj != nullptr)
@@ -329,11 +338,11 @@ namespace Secured_Ptr
                     dataBlockSize = size;
                 //protectedptr must be null here as called from constructor
                 protectedData = (PBYTE)malloc(dataBlockSize);
-				if (protectedData != nullptr)		// KW fix - @AE 04/10/2022
-				{
-					memcpy(protectedData, obj, dataBlockSize);
-					isEncrypted = true;
-				}
+                if (protectedData != nullptr)		// KW fix - @AE 04/10/2022
+                {
+                    memcpy(protectedData, obj, dataBlockSize);
+                    isEncrypted = true;
+                }
 #ifdef _ShowDebugVal
                 ProtectMemory(false);
                 GetSharedPtrDebug<T>();
@@ -367,10 +376,9 @@ namespace Secured_Ptr
             holder.reset();
             // holder2.reset();
         }
-
-        //Destructor
-        ~SecuredPtr()
+        void ClearData()
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             if (protectedData != nullptr)
             {
                 SecureWipeData();
@@ -388,6 +396,11 @@ namespace Secured_Ptr
                             free(debugval);
                         }  */
 #endif //_ShowDebugVal
+        }
+        //Destructor
+        ~SecuredPtr()
+        {
+            ClearData();
         }
         void SetWipeOnExit(bool wipe) { overwriteOnExit = wipe; }
         bool IsProtected() const { return isEncrypted; }
@@ -414,8 +427,8 @@ namespace Secured_Ptr
                 //Give the whole buffer
                 auto len = _msize(protectedData);
                 data = (PBYTE)malloc(len);
-				if (data != nullptr)	// KW fix - @AE 04/10/2022
-					memcpy(data, protectedData, len);
+                if (data != nullptr)	// KW fix - @AE 04/10/2022
+                    memcpy(data, protectedData, len);
             }
             return data;
         }
@@ -489,8 +502,8 @@ namespace Secured_Ptr
         }
         void SecureWipeData()
         {
-            if (overwriteOnExit)
-                SecureZeroMemory(protectedData, _msize(protectedData));
+            if (overwriteOnExit && protectedData != nullptr && dataSize > 0)
+                SecureZeroMemory(protectedData, dataSize);
         }
 
         void swap(const SecuredPtr& other) noexcept
@@ -504,9 +517,11 @@ namespace Secured_Ptr
                     dataBlockSize = other.dataSize + (CRYPTPROTECTMEMORY_BLOCK_SIZE - mod);
                 else
                     dataBlockSize = other.dataSize;
+                if (this->protectedData != nullptr)
+                    free(protectedData);
                 this->protectedData = (PBYTE)malloc(dataBlockSize);
-				if (this->protectedData != nullptr)	// KW fix - @AE 04/10/2022
-					memcpy_s(this->protectedData, dataBlockSize, other.protectedData, dataBlockSize);
+                if (this->protectedData != nullptr)	// KW fix - @AE 04/10/2022
+                    memcpy_s(this->protectedData, dataBlockSize, other.protectedData, dataBlockSize);
             }
 
             this->dataSize = other.dataSize;
@@ -522,11 +537,13 @@ namespace Secured_Ptr
 
         T operator*()
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             return *(this->operator&());
         }
 
         shared_ptr<T> operator&()
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             shared_ptr<T> nptr{};
             if (holder.expired())
             {
@@ -539,11 +556,13 @@ namespace Secured_Ptr
 
         shared_ptr<T> operator->()
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             return this->operator&();
         }
 
         void operator()(PBYTE obj, size_t size, bool IsSecured)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             SecuredPtr<T> temp(obj, size, IsSecured);
             *this = temp;
             SecureZeroMemory(obj, size);
@@ -552,9 +571,10 @@ namespace Secured_Ptr
 
         SecuredPtr& operator=(const SecuredPtr& rhs)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             if (this != &rhs) // Avoid self assignment
             {
-                this->~SecuredPtr(); // Can be called to clear existing files
+                ClearData(); // Can be called to clear existing files
                 this->swap(rhs);
                 return *this;
             }
@@ -562,9 +582,10 @@ namespace Secured_Ptr
 
         SecuredPtr& operator=(const SecuredPtr&& rhs) noexcept
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             if (this != &rhs) // Avoid self assignment
             {
-                this->~SecuredPtr();
+                ClearData();
                 this->swap(rhs);
                 return *this;
             }
@@ -572,7 +593,8 @@ namespace Secured_Ptr
 
         SecuredPtr& operator=(const T& rhs)
         {
-            this->~SecuredPtr();
+            std::lock_guard<std::recursive_mutex> lg(m);
+            ClearData();
             holder.reset();
             // holder2.reset();
             internalassign(const_cast<T*>(&rhs));
@@ -587,12 +609,14 @@ namespace Secured_Ptr
         //constant time comparison 
         bool operator!=(const T& other)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             return !(this->operator==(other));
         }
 
         //constant time comparison 
         bool operator==(const T& other)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             ProtectMemory(false);
             volatile byte* thisData = protectedData;
             PBYTE otherData = nullptr;
@@ -630,6 +654,7 @@ namespace Secured_Ptr
         //constant time comparison 
         bool operator==(SecuredPtr& other)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             if (dataSize != other.dataSize)
             {
                 ProtectMemory(true);
@@ -655,6 +680,7 @@ namespace Secured_Ptr
         }
         bool operator!=(SecuredPtr& other)
         {
+            std::lock_guard<std::recursive_mutex> lg(m);
             return !(*this == other);
         }
 
