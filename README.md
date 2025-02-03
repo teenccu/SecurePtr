@@ -3,9 +3,8 @@ C++ Template Class to automatically encrypt/decrypt the DATA of std::string,std:
 by using Windows DPAPI. However, it is possible to use the same concept  for other systems like Linux by changing the crypto implementation
 
  ***WARNING*** </BR>
-     This version does not take care of deep copying of class data. </BR>
-     Constructors and destructors are not called contructor and when securedptr is created/destroyed. </BR>
-     Any object inheritance is not properly maintained inside SecuredPtr. </BR>
+     This version does not take care of deep copying of class data. </BR>. 
+     If classes are used in SecurePtr then Constructors and destructors when securedptr creates or removes the class. </BR>
      Class objects can be recreated with the data recovered from SecuredPtr by calling construtors/destructors </BR>
    
 ***Examples:***
